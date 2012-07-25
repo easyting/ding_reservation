@@ -28,4 +28,4 @@
       Drupal.ajax.prototype.commands.init_behavior = init_behavior;
     }
   };
-})( jQuery );
+})(jQuery);

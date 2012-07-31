@@ -9,6 +9,13 @@
 define('DING_RESERVATION_DEFAULT_INTEREST_PERIOD', 183 * 86400);
 
 /**
+ * Implements hook_init().
+ */
+function ding_reservation_init() {
+  drupal_add_js(drupal_get_path('module', 'ding_reservation') . '/js/ding_reservation_scripts.js');
+}
+
+/**
  * Implements hook_ctools_plugin_directory().
  *
  * It simply tells panels where to find the .inc files that define various
@@ -33,6 +40,13 @@ function ding_reservation_menu() {
     'page arguments' => array('ding_reservation_update_reservations_form', 1, 5),
     'access callback' => 'ding_reservation_access',
     'access arguments' => array(1),
+  );
+
+  $items['reservation/reserve/%'] = array(
+    'page callback' => 'ding_reservation_reserve_ajax',
+    'page arguments' => array(2),
+    'access callback' => array(1),
+    'delivery callback' => 'ajax_deliver',
   );
 
   return $items;
@@ -63,9 +77,55 @@ function ding_reservation_ding_entity_menu(&$items, $type, $path, $index) {
 /**
  * Implements hook_ding_entity_buttons().
  */
-function ding_reservation_ding_entity_buttons($type, $entity) {
+function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default') {
   if ($type == 'ding_entity' && $entity->is('reservable')) {
-    return array(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
+    if ($widget == 'default') {
+      return array(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
+    }
+    elseif ($widget == 'ajax') {
+      $entity_id = $entity->localId;
+      // Store ting entites in session, so they are easily accessed.
+      $_SESSION['ding_reservation']['entity'][$entity_id] = $entity;
+      return array(array(
+        '#prefix' => '<div class="reservation-link-ajax ting-objec-id-' . $entity_id . '">',
+        '#suffix' => '</div>',
+        '#markup' => l(t('Reseve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
+      ));
+    }
+  }
+}
+
+/**
+ * Ajax entry callback.
+ *
+ * Perform ajax-specific commands for forms retrieval and displacement.
+ *
+ * @param $entity_id
+ *   Ting object id.
+ */
+function ding_reservation_reserve_ajax($entity_id = '') {
+  if (!empty($entity_id)) {
+    $entity = $_SESSION['ding_reservation']['entity'][$entity_id];
+
+    $commands = array();
+    $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
+    $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
+    $commands[] = ding_reservation_command_init_behavior($entity_id);
+    return array('#type' => 'ajax', '#commands' => $commands);
+  }
+}
+
+/**
+ * Custom ajax command.
+ *
+ * Initialize behaviors for dynamicly created forms.
+ *
+ * @param $entity_id
+ *   Ting object id.
+ */
+function ding_reservation_command_init_behavior($entity_id = '') {
+  if (!empty($entity_id)) {
+    return array('command' => 'init_behavior', 'data' => $entity_id);
   }
 }
 

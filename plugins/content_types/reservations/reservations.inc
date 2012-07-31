@@ -32,13 +32,13 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
       $block->title = t('Reservations ready for pickup');
       $no_reservation_text = t('There are no reservations ready for pickup.');
       $form_id = 'ding_reservation_reservations_ready_form';
-    break;
+      break;
     default:
     case 'not_ready_for_pickup':
       $block->title = t('Reservations');
       $no_reservation_text = t('There are no reservations.');
       $form_id = 'ding_reservation_reservations_notready_form';
-    break;
+      break;
   }
 
   $list = ding_provider_invoke_page('reservation', 'list', $account);
@@ -68,11 +68,11 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
 function ding_reservation_reservations_content_type_edit_form($form, &$form_state) {
   $conf = $form_state['conf'];
   $form['reservation_type_list'] = array(
-    '#type'    => 'radios',
-    '#title'   => t('Reservation list type'),
+    '#type' => 'radios',
+    '#title' => t('Reservation list type'),
     '#options' => array(
       'not_ready_for_pickup' => t('Not ready for pickup'),
-      'ready_for_pickup'     => t('Ready for pickup'),
+      'ready_for_pickup' => t('Ready for pickup'),
     ),
     '#default_value' => !empty($conf['reservation_type_list']) ? $conf['reservation_type_list'] : NULL,
   );

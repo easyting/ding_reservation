@@ -85,7 +85,7 @@ function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default
       return array(array(
           '#prefix' => '<div class="reservation-link-ajax ting-objec-id-' . $entity_id . '">',
           '#suffix' => '</div>',
-          '#markup' => l(t('Reseve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
+          '#markup' => l(t('Reserve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
         ));
     }
   }

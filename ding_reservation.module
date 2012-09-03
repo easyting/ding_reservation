@@ -310,6 +310,8 @@ function ding_reservation_reserve_form_callback($form, &$form_state) {
 function ding_reservation_reservations_form($form, &$form_state, $items = array(), $type = 'not_ready_for_pickup') {
   $options = array();
   $destination = drupal_get_destination();
+  $able_to_delete = (module_exists('alma') && variable_get('alma_enable_reservation_deletion', FALSE));
+
   switch ($type) {
     case 'ready_for_pickup':
       $header = array(
@@ -338,6 +340,16 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     $pickup_branch = ding_provider_invoke('reservation', 'branch_name', $item->pickup_branch_id);
     switch ($type) {
       case 'ready_for_pickup':
+        $delete_button = array(
+          '#prefix' => '<div class="delete-reservation">',
+          '#suffix' => '</div>',
+          '#type' => 'submit',
+          '#submit' => array('ding_reservation_reservations_delete_submit'),
+          '#reservation_id' => $item->id,
+          '#name' => 'delete-' . preg_replace('/\W/', '-', $item->id), // Need this for formAPI can tell buttons apart
+          '#value' => t('Delete'),
+          '#options' => array('query' => $destination),
+        );
         $options[$item->id] = array(
           'title' => array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
@@ -356,16 +368,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'pickup-branch',
           ),
           'operations' => array(
-            'data' => array(
-              '#prefix' => '<div class="delete-reservation">',
-              '#suffix' => '</div>',
-              '#type' => 'submit',
-              '#submit' => array('ding_reservation_reservations_delete_submit'),
-              '#reservation_id' => $item->id,
-              '#name' => 'delete-' . preg_replace('/\W/', '-', $item->id), // Need this for formAPI can tell buttons apart
-              '#value' => t('Delete'),
-              '#options' => array('query' => $destination),
-            ),
+            'data' => ($able_to_delete) ? $delete_button : '',
             'class' => 'operations',
           ),
         );
@@ -403,6 +406,16 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
         );
         break;
       case 'not_ready_for_pickup':
+        $delete_button = array(
+          '#prefix' => '<div class="delete-reservation">',
+          '#suffix' => '</div>',
+          '#type' => 'submit',
+          '#submit' => array('ding_reservation_reservations_delete_submit'),
+          '#reservation_id' => $item->id,
+          '#name' => 'delete-' . preg_replace('/\W/', '-', $item->id), // Need this for formAPI can tell buttons apart
+          '#value' => t('Delete'),
+          '#options' => array('query' => $destination),
+        );
         $options[$item->id] = array(
           'title' => array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
@@ -425,16 +438,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'queue-number',
           ),
           'operations' => array(
-            'data' => array(
-              '#prefix' => '<div class="delete-reservation">',
-              '#suffix' => '</div>',
-              '#type' => 'submit',
-              '#submit' => array('ding_reservation_reservations_delete_submit'),
-              '#reservation_id' => $item->id,
-              '#name' => 'delete-' . preg_replace('/\W/', '-', $item->id), // Need this for formAPI can tell buttons apart
-              '#value' => t('Delete'),
-              '#options' => array('query' => $destination),
-            ),
+            'data' => ($able_to_delete) ? $delete_button : '',
             'class' => 'operations',
           ),
         );
@@ -458,16 +462,23 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     }
   }
 
-  $form['submit'] = array(
-    '#prefix' => '<div class="delete-reservations">',
+  $form['actions'] = array(
+    '#prefix' => '<div class="op-reservations">',
     '#suffix' => '</div>',
-    '#submit' => array('ding_reservation_reservations_delete_submit'),
-    '#type' => 'submit',
-    '#value' => t('Delete reservations'),
   );
 
+  if ($able_to_delete) {
+    $form['actions']['submit'] = array(
+      '#prefix' => '<div class="delete-reservations">',
+      '#suffix' => '</div>',
+      '#submit' => array('ding_reservation_reservations_delete_submit'),
+      '#type' => 'submit',
+      '#value' => t('Delete reservations'),
+    );
+  }
+
   if ($type == 'not_ready_for_pickup') {
-    $form['update'] = array(
+    $form['actions']['update'] = array(
       '#prefix' => '<div class="update-reservations">',
       '#suffix' => '</div>',
       '#type' => 'submit',

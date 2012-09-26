@@ -337,6 +337,10 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
   }
   foreach ($items as $id => $item) {
     $entity = $item->entity;
+    if (!is_object($entity)) {
+      $entity = ding_reservation_replace_entity($item);
+    }
+
     $pickup_branch = ding_provider_invoke('reservation', 'branch_name', $item->pickup_branch_id);
     switch ($type) {
       case 'ready_for_pickup':
@@ -493,6 +497,20 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
   }
 
   return $form;
+}
+
+/**
+ * Create a dummy ting entity object, when item is not found in the ting well.
+ * Fill in data using info fetched from certain provider.
+ *
+ * @param $entity_id
+ *   Ting object id.
+ * @return
+ *   A TingEntity object or FALSE if provider failed to fetch the data.
+ */ 
+function ding_reservation_replace_entity($item) {
+  $provider = _ding_provider_get_provider();
+  return call_user_func($provider['reservation']['module'] . '_replace_entity', $item);
 }
 
 function ding_reservation_reservations_delete_submit($form, &$form_state) {

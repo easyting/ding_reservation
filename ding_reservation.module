@@ -669,11 +669,13 @@ function ding_reservation_default_options_branch($type, $name, $default, $option
     '#options' => $allowed_branches,
     '#default_value' => $default_value,
   );
+  /*
   if ($create) {
     $form[$name . 'description'] = array(
       '#markup' => '<p>' . t('In order to make quick reservations, you must select a default pickup branch.') . '</p>',
     );
   }
+  */
   return $form;
 }
 
@@ -693,11 +695,13 @@ function ding_reservation_interest_period_selector($type, $name, $default, $opti
     '#options' => $allowed_periods,
     '#default_value' => $default,
   );
+  /*
   if ($create) {
     $form[$name . 'description'] = array(
       '#markup' => '<p>' . t('Select an interest period.') . '</p>',
     );
   }
+  */
   return $form;
 }
 

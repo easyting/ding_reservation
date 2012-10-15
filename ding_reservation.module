@@ -388,6 +388,16 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'operations',
           ),
         );
+
+        if (!empty($item->notes)) {
+          $options[$item->id]['title']['data'][] = array(
+            '#type' => 'markup',
+            '#prefix' => '<p class="periodical-number">',
+            '#markup' => t('(Periodical no. @periodical)', array('@periodical' => check_plain($item->notes))),
+            '#suffix' => '</p>',
+          );
+        }
+
         if (isset($item->order_arrived) && !$item->order_arrived) {
           $options[$item->id]['title']['data'][] = array(
             '#type' => 'markup',
@@ -459,6 +469,15 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           ),
         );
 
+        if (!empty($item->notes)) {
+          $options[$item->id]['title']['data'][] = array(
+            '#type' => 'markup',
+            '#prefix' => '<p class="periodical-number">',
+            '#markup' => t('(Periodical no. @periodical)', array('@periodical' => check_plain($item->notes))),
+            '#suffix' => '</p>',
+          );
+        }
+
         if (isset($item->order_id)) {
           $options[$item->id]['title']['data'][] = array(
             '#type' => 'markup',
@@ -498,6 +517,15 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'ill-status',
           ),
         );
+
+        if (!empty($item->notes)) {
+          $options[$item->id]['title']['data'][] = array(
+            '#type' => 'markup',
+            '#prefix' => '<p class="periodical-number">',
+            '#markup' => t('(Periodical no. @periodical)', array('@periodical' => check_plain($item->notes))),
+            '#suffix' => '</p>',
+          );
+        }
 
         if (isset($item->order_id)) {
           $options[$item->id]['title']['data'][] = array(

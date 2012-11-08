@@ -319,6 +319,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     case 'ready_for_pickup':
       $header = array(
         'title' => t('Title'),
+        'pickup_id' => t('Pickup id'),
         'created' => t('Created date'),
         'pickup_date' => t('Pickup date'),
         'pickup_branch' => t('Pickup branch'),
@@ -329,6 +330,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     case 'not_ready_for_pickup':
       $header = array(
         'title' => t('Title'),
+        'pickup_id' => t('Pickup id'),
         'created' => t('Created date'),
         'expiry' => t('Expiry date'),
         'pickup_branch' => t('Pickup branch'),
@@ -340,6 +342,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     case 'interlibrary_loans':
       $header = array(
         'title' => t('Title'),
+        'pickup_id' => t('Pickup id'),
         'created' => t('Created date'),
         'expiry' => t('Expiry date'),
         'library' => t('Library'),
@@ -371,6 +374,10 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
             'class' => 'title',
           ),
+          'pickup_id' =>array(
+            'data' => ding_reservation_get_pickup_id($item),
+            'class' => 'pickup-id',
+          ),
           'created' => array(
             'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
             'class' => 'created-date',
@@ -398,32 +405,6 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           );
         }
 
-        if (isset($item->order_arrived) && !$item->order_arrived) {
-          $options[$item->id]['title']['data'][] = array(
-            '#type' => 'markup',
-            '#prefix' => '<p class="order-arrived">',
-            '#markup' => t('The material is in transit and is still not available for loan on the library'),
-            '#suffix' => '</p>',
-          );
-        }
-        else {
-          if (isset($item->pickup_order_id)) {
-            $options[$item->id]['title']['data'][] = array(
-              '#type' => 'markup',
-              '#prefix' => '<p class="pickup-order-id">',
-              '#markup' => t('(Pickup id: @pickup_id)', array('@pickup_id' => check_plain($item->pickup_order_id))),
-              '#suffix' => '</p>',
-            );
-          }
-          if (!isset($item->pickup_order_id) && isset($item->order_id)) {
-            $options[$item->id]['title']['data'][] = array(
-              '#type' => 'markup',
-              '#prefix' => '<p class="order-id">',
-              '#markup' => t('(Order no. @order_id)', array('@order_id' => check_plain($item->order_id))),
-              '#suffix' => '</p>',
-            );
-          }
-        }
         $form['reservations'] = array(
           '#type' => 'tableselect_form',
           '#header' => $header,
@@ -446,6 +427,10 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           'title' => array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
             'class' => 'title',
+          ),
+          'pickup_id' =>array(
+            'data' => ding_reservation_get_pickup_id($item),
+            'class' => 'pickup-id',
           ),
           'created' => array(
             'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
@@ -478,15 +463,6 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           );
         }
 
-        if (isset($item->order_id)) {
-          $options[$item->id]['title']['data'][] = array(
-            '#type' => 'markup',
-            '#prefix' => '<p class="order-id">',
-            '#markup' => t('(Order no. @order_id)', array('@order_id' => check_plain($item->order_id))),
-            '#suffix' => '</p>',
-          );
-        }
-
         $form['reservations'] = array(
           '#type' => 'tableselect_form',
           '#header' => $header,
@@ -499,6 +475,10 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           'title' => array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
             'class' => 'title',
+          ),
+          'pickup_id' =>array(
+            'data' => ding_reservation_get_pickup_id($item),
+            'class' => 'pickup-id',
           ),
           'created' => array(
             'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
@@ -523,15 +503,6 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             '#type' => 'markup',
             '#prefix' => '<p class="periodical-number">',
             '#markup' => t('(Periodical no. @periodical)', array('@periodical' => check_plain($item->notes))),
-            '#suffix' => '</p>',
-          );
-        }
-
-        if (isset($item->order_id)) {
-          $options[$item->id]['title']['data'][] = array(
-            '#type' => 'markup',
-            '#prefix' => '<p class="order-id">',
-            '#markup' => t('(Order no. @order_id)', array('@order_id' => check_plain($item->order_id))),
             '#suffix' => '</p>',
           );
         }
@@ -577,6 +548,31 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
   }
 
   return $form;
+}
+
+/**
+ * Get pickup id number.
+ * 
+ * @param $item
+ *   Reserved item object.
+ * @return type
+ *   Pickup id, if any.
+ */
+function ding_reservation_get_pickup_id($item) {
+  if (isset($item->order_arrived) && !$item->order_arrived) {
+    return t('The material is in transit and is still not available for loan on the library');
+  }
+  else {
+    if (!isset($item->pickup_order_id) && isset($item->order_id)) {
+      return $item->order_id;
+    }
+    elseif (isset($item->pickup_order_id)) {
+      return $item->pickup_order_id;
+    }
+    else {
+      return t('On route') . ' ' . l('(?)', current_path(), array('attributes' => array('title' => t('The material is on route to the library. You will be notified when it is ready for pickup.'))));
+    }
+  }
 }
 
 /**

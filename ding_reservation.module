@@ -83,7 +83,7 @@ function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default
       // Store ting entites in session, so they are easily accessed.
       $_SESSION['ding_reservation']['entity'][$entity_id] = $entity;
       return array(array(
-          '#prefix' => '<div class="reservation-link-ajax ting-objec-id-' . $entity_id . '">',
+          '#prefix' => '<div class="reservation-link-ajax ting-object-id-' . $entity_id . '">',
           '#suffix' => '</div>',
           '#markup' => l(t('Reserve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
         ));
@@ -121,7 +121,7 @@ function ding_reservation_reserve_ajax($entity_id = '') {
  */
 function ding_reservation_command_init_behavior($entity_id = '') {
   if (!empty($entity_id)) {
-    return array('command' => 'init_behavior', 'data' => $entity_id);
+    return array('command' => 'enable_reservation', 'data' => $entity_id);
   }
 }
 

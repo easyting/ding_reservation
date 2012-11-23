@@ -19,7 +19,7 @@
       }
     });
   }
-  
+
   Drupal.behaviors.ding_reservation = {
     attach: function (context, settings) {
       Drupal.ajax.prototype.commands.enable_reservation = enable_reservation;

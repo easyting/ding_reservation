@@ -81,12 +81,11 @@ function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default
       drupal_add_js(drupal_get_path('module', 'ding_reservation') . '/js/ding_reservation_scripts.js');
       $entity_id = $entity->localId;
       // Store ting entites in session, so they are easily accessed.
-      $_SESSION['ding_reservation']['entity'][$entity_id] = $entity;
       return array(array(
-          '#prefix' => '<div class="reservation-link-ajax ting-object-id-' . $entity_id . '">',
-          '#suffix' => '</div>',
-          '#markup' => l(t('Reserve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
-        ));
+        '#prefix' => '<div class="reservation-link-ajax ting-object-id-' . $entity_id . '">',
+        '#suffix' => '</div>',
+        '#markup' => l(t('Reserve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
+      ));
     }
   }
 }
@@ -101,13 +100,16 @@ function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default
  */
 function ding_reservation_reserve_ajax($entity_id = '') {
   if (!empty($entity_id)) {
-    $entity = $_SESSION['ding_reservation']['entity'][$entity_id];
+    $agency = variable_get('ting_agency', FALSE);
+    $entity = ting_get_object_request($agency . ':' . $entity_id);
 
-    $commands = array();
-    $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
-    $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
-    $commands[] = ding_reservation_command_init_behavior($entity_id);
-    return array('#type' => 'ajax', '#commands' => $commands);
+    if (is_object($entity)) {
+      $commands = array();
+      $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
+      $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
+      $commands[] = ding_reservation_command_init_behavior($entity_id);
+      return array('#type' => 'ajax', '#commands' => $commands);
+    }
   }
 }
 
@@ -242,7 +244,7 @@ function ding_reservation_reserve_form_validate($form, &$form_state) {
           elseif ($key == $provider . '_interest_period') {
             $removal = $provider . '_preferred_branch';
           }
-          
+
           $form_state['removable'] = $removal;
           $form_state['rebuild'] = TRUE;
         }

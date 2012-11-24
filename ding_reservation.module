@@ -81,12 +81,11 @@ function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default
       drupal_add_js(drupal_get_path('module', 'ding_reservation') . '/js/ding_reservation_scripts.js');
       $entity_id = $entity->localId;
       // Store ting entites in session, so they are easily accessed.
-      $_SESSION['ding_reservation']['entity'][$entity_id] = $entity;
       return array(array(
-          '#prefix' => '<div class="reservation-link-ajax ting-objec-id-' . $entity_id . '">',
-          '#suffix' => '</div>',
-          '#markup' => l(t('Reserve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
-        ));
+        '#prefix' => '<div class="reservation-link-ajax ting-object-id-' . $entity_id . '">',
+        '#suffix' => '</div>',
+        '#markup' => l(t('Reserve'), 'reservation/reserve/' . $entity_id, array('attributes' => array('class' => array('use-ajax')), 'absolute' => TRUE)),
+      ));
     }
   }
 }
@@ -101,13 +100,16 @@ function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default
  */
 function ding_reservation_reserve_ajax($entity_id = '') {
   if (!empty($entity_id)) {
-    $entity = $_SESSION['ding_reservation']['entity'][$entity_id];
+    $agency = variable_get('ting_agency', '');
+    $entity = ting_get_object_request($agency . ':' . $entity_id);
 
-    $commands = array();
-    $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
-    $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
-    $commands[] = ding_reservation_command_init_behavior($entity_id);
-    return array('#type' => 'ajax', '#commands' => $commands);
+    if (is_object($entity) && $entity instanceof TingClientObject) {
+      $commands = array();
+      $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
+      $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
+      $commands[] = ding_reservation_command_init_behavior($entity_id);
+      return array('#type' => 'ajax', '#commands' => $commands);
+    }
   }
 }
 
@@ -121,7 +123,7 @@ function ding_reservation_reserve_ajax($entity_id = '') {
  */
 function ding_reservation_command_init_behavior($entity_id = '') {
   if (!empty($entity_id)) {
-    return array('command' => 'init_behavior', 'data' => $entity_id);
+    return array('command' => 'enable_reservation', 'data' => $entity_id);
   }
 }
 
@@ -226,6 +228,8 @@ function ding_reservation_reserve_form_validate($form, &$form_state) {
      * result.
      */
     $provider_options = array();
+    $provider = ding_provider_get_provider_module_name('reservation');
+    $removal = array();
     foreach ($res as $key => $value) {
       if (is_array($value) && !empty($value['#error'])) {
         if (!$form_state['options_hidden']) {
@@ -234,6 +238,19 @@ function ding_reservation_reserve_form_validate($form, &$form_state) {
         }
         else {
           // Else simply rebuild the form.
+          if ($key == $provider . '_preferred_branch') {
+            $removal[] = $provider . '_interest_period';
+          }
+          elseif ($key == $provider . '_interest_period') {
+            $removal[] = $provider . '_preferred_branch';
+          }
+
+          // In case both fields are not set, remove nothing.
+          if (count($removal) == 2) {
+            $removal = array();
+          }
+
+          $form_state['removable'] = $removal;
           $form_state['rebuild'] = TRUE;
         }
       }
@@ -298,6 +315,15 @@ function ding_reservation_reserve_form_callback($form, &$form_state) {
 
   $html = theme('status_messages');
   if ($form_state['rebuild'] || form_get_errors()) {
+    // Hide certain fields, if any.
+    if (is_array($form_state['removable'])) {
+      $removal = $form_state['removable'];
+      foreach ($removal as $v) {
+        unset($form['provider_options'][$v]);
+        unset($form['provider_options'][$v . 'description']);
+      }
+
+    }
     // Redisplay form.
     $html .= drupal_render($form);
   }
@@ -319,6 +345,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     case 'ready_for_pickup':
       $header = array(
         'title' => t('Title'),
+        'pickup_id' => t('Pickup id'),
         'created' => t('Created date'),
         'pickup_date' => t('Pickup date'),
         'pickup_branch' => t('Pickup branch'),
@@ -329,6 +356,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     case 'not_ready_for_pickup':
       $header = array(
         'title' => t('Title'),
+        'order_nr' => t('Order nr.'),
         'created' => t('Created date'),
         'expiry' => t('Expiry date'),
         'pickup_branch' => t('Pickup branch'),
@@ -340,6 +368,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     case 'interlibrary_loans':
       $header = array(
         'title' => t('Title'),
+        'pickup_id' => t('Pickup id'),
         'created' => t('Created date'),
         'expiry' => t('Expiry date'),
         'library' => t('Library'),
@@ -371,6 +400,10 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
             'class' => 'title',
           ),
+          'pickup_id' =>array(
+            'data' => ding_reservation_get_pickup_id($item),
+            'class' => 'pickup-id',
+          ),
           'created' => array(
             'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
             'class' => 'created-date',
@@ -388,32 +421,16 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'operations',
           ),
         );
-        if (isset($item->order_arrived) && !$item->order_arrived) {
+
+        if (!empty($item->notes)) {
           $options[$item->id]['title']['data'][] = array(
             '#type' => 'markup',
-            '#prefix' => '<p class="order-arrived">',
-            '#markup' => t('The material is in transit and is still not available for loan on the library'),
+            '#prefix' => '<p class="periodical-number">',
+            '#markup' => t('(Periodical no. @periodical)', array('@periodical' => check_plain($item->notes))),
             '#suffix' => '</p>',
           );
         }
-        else {
-          if (isset($item->pickup_order_id)) {
-            $options[$item->id]['title']['data'][] = array(
-              '#type' => 'markup',
-              '#prefix' => '<p class="pickup-order-id">',
-              '#markup' => t('(Pickup id: @pickup_id)', array('@pickup_id' => check_plain($item->pickup_order_id))),
-              '#suffix' => '</p>',
-            );
-          }
-          if (!isset($item->pickup_order_id) && isset($item->order_id)) {
-            $options[$item->id]['title']['data'][] = array(
-              '#type' => 'markup',
-              '#prefix' => '<p class="order-id">',
-              '#markup' => t('(Order no. @order_id)', array('@order_id' => check_plain($item->order_id))),
-              '#suffix' => '</p>',
-            );
-          }
-        }
+
         $form['reservations'] = array(
           '#type' => 'tableselect_form',
           '#header' => $header,
@@ -437,6 +454,10 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
             'class' => 'title',
           ),
+          'order_nr' =>array(
+            'data' => ding_reservation_get_order_nr($item),
+            'class' => 'pickup-id',
+          ),
           'created' => array(
             'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
             'class' => 'created-date',
@@ -459,11 +480,11 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           ),
         );
 
-        if (isset($item->order_id)) {
+        if (!empty($item->notes)) {
           $options[$item->id]['title']['data'][] = array(
             '#type' => 'markup',
-            '#prefix' => '<p class="order-id">',
-            '#markup' => t('(Order no. @order_id)', array('@order_id' => check_plain($item->order_id))),
+            '#prefix' => '<p class="periodical-number">',
+            '#markup' => t('(Periodical no. @periodical)', array('@periodical' => check_plain($item->notes))),
             '#suffix' => '</p>',
           );
         }
@@ -480,6 +501,10 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           'title' => array(
             'data' => array($entity ? ting_object_view($entity, 'user_list') : array('#markup' => $item->display_name)),
             'class' => 'title',
+          ),
+          'pickup_id' => array(
+            'data' => ding_reservation_get_pickup_id($item),
+            'class' => 'pickup-id',
           ),
           'created' => array(
             'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
@@ -499,11 +524,11 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           ),
         );
 
-        if (isset($item->order_id)) {
+        if (!empty($item->notes)) {
           $options[$item->id]['title']['data'][] = array(
             '#type' => 'markup',
-            '#prefix' => '<p class="order-id">',
-            '#markup' => t('(Order no. @order_id)', array('@order_id' => check_plain($item->order_id))),
+            '#prefix' => '<p class="periodical-number">',
+            '#markup' => t('(Periodical no. @periodical)', array('@periodical' => check_plain($item->notes))),
             '#suffix' => '</p>',
           );
         }
@@ -549,6 +574,42 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
   }
 
   return $form;
+}
+
+/**
+ * Get pickup id number.
+ *
+ * @param $item
+ *   Reserved item object.
+ * @return
+ *   Pickup id, if any.
+ */
+function ding_reservation_get_pickup_id($item) {
+  if (isset($item->order_arrived) && !$item->order_arrived) {
+    return t('The material is in transit and is still not available for loan on the library');
+  }
+  elseif (isset($item->pickup_order_id)) {
+    return $item->pickup_order_id;
+  }
+
+  return '';
+}
+
+/**
+ * Get order id number.
+ *
+ * @param $item
+ *   Reserved item object.
+ * @return
+ *   Order number, if any.
+ */
+function ding_reservation_get_order_nr($item) {
+  if (!isset($item->pickup_order_id) && isset($item->order_id)) {
+    return $item->order_id;
+  }
+  else {
+    return t('On route') . ' ' . l('(?)', current_path(), array('attributes' => array('title' => t('The material is on route to the library. You will be notified when it is ready for pickup.'))));
+  }
 }
 
 /**
@@ -761,9 +822,33 @@ function ding_reservation_interest_period_selector($type, $name, $default, $opti
  */
 function ding_reservation_default_options_branch_validate($type, $name, $default, $values) {
   if (empty($values[$name])) {
+    $provider = ding_provider_get_provider_module_name('reservation');
     if ($type == 'create' && empty($default)) {
-      $result['openruth_preferred_branch'] = array(
-        '#error' => 'You must select a branch',
+      $result[$provider . '_preferred_branch'] = array(
+        '#error' => t('You must select a branch'),
+      );
+    }
+    else {
+      $result[$name] = $default;
+    }
+    return $result;
+  }
+  else {
+    return $values;
+  }
+}
+
+/**
+ * Validate interest period selector.
+ *
+ * Returns what ding_reservation expects.
+ */
+function ding_reservation_default_options_interest_period_validate($type, $name, $default, $values) {
+  if (empty($values[$name])) {
+    $provider = ding_provider_get_provider_module_name('reservation');
+    if ($type == 'create' && empty($default)) {
+      $result[$provider . '_interest_period'] = array(
+        '#error' => t('You must select an interest period'),
       );
     }
     else {

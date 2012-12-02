@@ -102,7 +102,6 @@ function ding_reservation_reserve_ajax($entity_id = '') {
   if (!empty($entity_id)) {
     $agency = variable_get('ting_agency', '');
     $entity = ting_get_object_request($agency . ':' . $entity_id);
-
     if (is_object($entity) && $entity instanceof TingClientObject) {
       $commands = array();
       $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
@@ -914,14 +913,14 @@ class DingReservationReservableEntity implements DingReservationReservable {
   }
 
   public function getProviderId() {
-    return $this->entity->provider_id;
+    return $this->entity->localId;
   }
 
   public function getEntity() {
     return $this->entity;
   }
   public function getTitle() {
-    return $this->entity->title;
+    return $this->entity->record['dc:title'][''][0];
   }
 }
 

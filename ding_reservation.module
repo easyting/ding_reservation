@@ -102,7 +102,6 @@ function ding_reservation_reserve_ajax($entity_id = '') {
   if (!empty($entity_id)) {
     $agency = variable_get('ting_agency', '');
     $entity = ting_get_object_request($agency . ':' . $entity_id);
-
     if (is_object($entity) && $entity instanceof TingClientObject) {
       $commands = array();
       $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
@@ -221,6 +220,11 @@ function ding_reservation_reserve_form_validate($form, &$form_state) {
   global $user;
   if (ding_provider_implements('reservation', 'options_validate')) {
     $res = ding_provider_invoke('reservation', 'options_validate', 'create', $user, $form_state['values']['reservable'], $form_state['values']['provider_options']);
+    // No valudation options returned by provider.
+    if (is_null($res)) {
+      return;
+    }
+
     /**
      * We cannot set the value of the individual provider form elements, as
      * they might not have been show, and thus not exist. However, setting the
@@ -914,14 +918,15 @@ class DingReservationReservableEntity implements DingReservationReservable {
   }
 
   public function getProviderId() {
-    return $this->entity->provider_id;
+    return $this->entity->localId;
   }
 
   public function getEntity() {
     return $this->entity;
   }
+
   public function getTitle() {
-    return $this->entity->title;
+    return $this->entity->record['dc:title'][''][0];
   }
 }
 

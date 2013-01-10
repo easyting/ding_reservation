@@ -73,7 +73,7 @@ function ding_reservation_ding_entity_menu(&$items, $type, $path, $index) {
 function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default') {
   if ($type == 'ding_entity' && $entity->is('reservable')) {
     if ($widget == 'default') {
-      return array(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), TRUE));
+      return array(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity)));
     }
     elseif ($widget == 'ajax') {
       drupal_add_library('system', 'drupal.ajax');
@@ -104,7 +104,7 @@ function ding_reservation_reserve_ajax($entity_id = '') {
     $entity = ting_get_object_request($agency . ':' . $entity_id);
     if (is_object($entity) && $entity instanceof TingClientObject) {
       $commands = array();
-      $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity), FALSE));
+      $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity)));
       $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
       $commands[] = ding_reservation_command_init_behavior($entity_id);
       return array('#type' => 'ajax', '#commands' => $commands);
@@ -165,7 +165,7 @@ function ding_reservation_forms($form_id, $args) {
  * Note that this form relies on form caching, which is triggered by
  * ajaxifying the submit button.
  */
-function ding_reservation_reserve_form($form, &$form_state, $reservable, $hide_options = FALSE) {
+function ding_reservation_reserve_form($form, &$form_state, $reservable, $hide_options = TRUE) {
   global $user;
   if (!($reservable instanceof DingReservationReservable)) {
     // Assume that we were given a reservable entity.
@@ -193,12 +193,10 @@ function ding_reservation_reserve_form($form, &$form_state, $reservable, $hide_o
   $hide_options = !isset($form_state['options_hidden']) ? $hide_options : FALSE;
   $form_state['options_hidden'] = $hide_options;
 
-  if (!$hide_options) {
-    if (ding_provider_implements('reservation', 'options') && $provider_form = ding_provider_invoke('reservation', 'options', 'create', $user, $reservable)) {
-      $form['provider_options'] = $provider_form + array(
-        '#tree' => TRUE,
-      );
-    }
+  if (ding_provider_implements('reservation', 'options') && $provider_form = ding_provider_invoke('reservation', 'options', 'create', $user, $reservable)) {
+    $form['provider_options'] = $provider_form + array(
+      '#tree' => TRUE,
+    );
   }
 
   $form['submit'] = array(
@@ -221,6 +219,7 @@ function ding_reservation_reserve_form_validate($form, &$form_state) {
   if (ding_provider_implements('reservation', 'options_validate')) {
     $res = ding_provider_invoke('reservation', 'options_validate', 'create', $user, $form_state['values']['reservable'], $form_state['values']['provider_options']);
     // No valudation options returned by provider.
+
     if (is_null($res)) {
       return;
     }
@@ -236,27 +235,20 @@ function ding_reservation_reserve_form_validate($form, &$form_state) {
     $removal = array();
     foreach ($res as $key => $value) {
       if (is_array($value) && !empty($value['#error'])) {
-        if (!$form_state['options_hidden']) {
-          // Only show an error if the user had a choice.
-          form_error($form['provider_options'], $res['#error']);
+        if ($key == $provider . '_preferred_branch') {
+          $removal[] = $provider . '_interest_period';
         }
-        else {
-          // Else simply rebuild the form.
-          if ($key == $provider . '_preferred_branch') {
-            $removal[] = $provider . '_interest_period';
-          }
-          elseif ($key == $provider . '_interest_period') {
-            $removal[] = $provider . '_preferred_branch';
-          }
-
-          // In case both fields are not set, remove nothing.
-          if (count($removal) == 2) {
-            $removal = array();
-          }
-
-          $form_state['removable'] = $removal;
-          $form_state['rebuild'] = TRUE;
+        elseif ($key == $provider . '_interest_period') {
+          $removal[] = $provider . '_preferred_branch';
         }
+
+        // In case both fields are not set, remove nothing.
+        if (count($removal) == 2) {
+          $removal = array();
+        }
+
+        $form_state['removable'] = $removal;
+        $form_state['rebuild'] = TRUE;
       }
       else {
         $provider_options[$key] = $value;
@@ -773,7 +765,7 @@ function ding_reservation_update_reservations_form_callback($form, &$form_state)
  */
 function ding_reservation_default_options_branch($type, $name, $default, $options) {
   $create = ($type == 'create');
-  $allowed_branches = ($create ? array() : array('' => t('No change'))) + $options;
+  $allowed_branches = ($create ? array('' => 'Select') : array('' => t('No change'))) + $options;
   $default_value = $create ? $default : '';
   $form[$name] = array(
     '#type' => 'select',
@@ -805,7 +797,7 @@ function ding_reservation_interest_period_selector($type, $name, $default, $opti
     }
   }
 
-  $allowed_periods = ($create ? array() : array('' => t('No change'))) + $options;
+  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + $options;
   // $default_value = $create ? $default : '';
   $form[$name] = array(
     '#type' => 'select',
@@ -841,7 +833,7 @@ function ding_reservation_default_options_branch_validate($type, $name, $default
     return $result;
   }
   else {
-    return $values;
+    return array($name => $values[$name]);
   }
 }
 
@@ -864,7 +856,7 @@ function ding_reservation_default_options_interest_period_validate($type, $name,
     return $result;
   }
   else {
-    return $values;
+    return array($name => $values[$name]);
   }
 }
 

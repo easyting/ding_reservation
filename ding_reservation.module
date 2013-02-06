@@ -335,7 +335,13 @@ function ding_reservation_reserve_form_callback($form, &$form_state) {
 function ding_reservation_reservations_form($form, &$form_state, $items = array(), $type = 'not_ready_for_pickup') {
   $options = array();
   $destination = drupal_get_destination();
-  $able_to_delete = (module_exists('alma') && variable_get('alma_enable_reservation_deletion', FALSE));
+  $provider = ding_provider_get_provider_module_name('reservation');
+  $able_to_delete = variable_get($provider . '_enable_reservation_deletion', FALSE);
+  $alma_rule = (($type == 'ready_for_pickup' || $type == 'interlibray_loans' || $type == 'not_ready_for_pickup') && $provider == 'alma');
+  $openruth_rule = ($type == 'not_ready_for_pickup' && $provider == 'openruth');
+  $empty_message = '';
+  $header = array();
+  $options = array();
 
   switch ($type) {
     case 'ready_for_pickup':
@@ -412,7 +418,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'pickup-branch',
           ),
           'operations' => array(
-            'data' => ($able_to_delete) ? $delete_button : '',
+            'data' => ($able_to_delete && $provider != 'openruth') ? $delete_button : '',
             'class' => 'operations',
           ),
         );
@@ -426,12 +432,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           );
         }
 
-        $form['reservations'] = array(
-          '#type' => 'tableselect_form',
-          '#header' => $header,
-          '#options' => $options,
-          '#empty' => t('No reservations ready for pickup'),
-        );
+        $empty_message = t('No reservations ready for pickup');
         break;
       case 'not_ready_for_pickup':
         $delete_button = array(
@@ -484,12 +485,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
           );
         }
 
-        $form['reservations'] = array(
-          '#type' => 'tableselect_form',
-          '#header' => $header,
-          '#options' => $options,
-          '#empty' => t('No Reservations'),
-        );
+        $empty_message = t('No Reservations');
         break;
       case 'interlibrary_loans':
         $options[$item->id] = array(
@@ -523,15 +519,23 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             '#suffix' => '</p>',
           );
         }
-
-        $form['reservations'] = array(
-          '#type' => 'tableselect_form',
-          '#header' => $header,
-          '#options' => $options,
-          '#empty' => t('No inter-library loans'),
-        );
+        $empty_message = t('No inter-library loans');
         break;
     }
+  }
+  if ($alma_rule || $openruth_rule) {
+    $form['reservations'] = array(
+      '#type' => 'tableselect_form',
+      '#header' => $header,
+      '#options' => $options,
+      '#empty' => $empty_message,
+    );
+  }
+  else {
+    $form['reservations'] = array(
+      '#type' => 'item',
+      '#markup' => theme('table', array('header' => $header, 'rows' => $options, 'empty' => $empty_message)),
+    );
   }
 
   $form['actions'] = array(
@@ -539,7 +543,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     '#suffix' => '</div>',
   );
 
-  if ($able_to_delete) {
+  if ($alma_rule || $openruth_rule) {
     $form['actions']['submit'] = array(
       '#prefix' => '<div class="delete-reservations">',
       '#suffix' => '</div>',

@@ -174,6 +174,13 @@ function ding_reservation_reserve_form($form, &$form_state, $reservable, $hide_o
   $entity = $reservable->getEntity();
   $uri = ding_entity_uri('ding_entity', $entity);
 
+  // If HTTPS is enabled we are redirected to the reservation form page after
+  // logging in is done and we need to save the item user wanted to reserve
+  // to reserve it again automatically.
+  if (variable_get('https', FALSE) && !$user->uid) {
+    setcookie('entityReserveOnce', $entity->localId, 0, '/');
+  }
+
   // We post to our own path as we might want to rebuild the form.
   // @todo move *_get_destination to ding_base?
   if ($_GET['q'] != $uri['path'] . '/reserve') {
@@ -897,6 +904,17 @@ function ding_reservation_sort_queue_by_queue_number($a, $b) {
     return 0;
   }
   return ($a->queue_number < $b->queue_number) ? -1 : 1;
+}
+
+/**
+ * Triggers reservation link click to ensure seamless reservation between redirects.
+ */
+function ding_reservation_init() {
+  global $user;
+  if ($user->uid && !empty($_COOKIE['entityReserveOnce'])) {
+    // @todo: we assume that ding_toggle_format's jquery.cookie.js will be present.
+    drupal_add_js(drupal_get_path('module', 'ding_reservation') . '/js/ding_reservation_once.js');
+  }
 }
 
 /**

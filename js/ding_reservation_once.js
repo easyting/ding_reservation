@@ -6,6 +6,7 @@
     if ($.cookie) {
       var entityId;
       if (entityId = $.cookie('entityReserveOnce')) {
+        // Delete the cookie.
         $.cookie('entityReserveOnce', null, { path: '/' });
         var reserveTrigger = $('a[href$="reserve/' + entityId + '"]');
         if (!reserveTrigger.length) {
@@ -14,7 +15,17 @@
         $('html, body').animate({
          scrollTop: $(reserveTrigger).offset().top
         }, 2000);
-        $(reserveTrigger).mousedown();
+        // Make sure the behaviors were attached.
+        setTimeout(function() {
+          // Call click() for links.
+          if ($(reserveTrigger).attr('href')) {
+            $(reserveTrigger).click();
+          }
+          // Call mousedown(), since click() event is forbidden by #ajax['prevent'].
+          else {
+            $(reserveTrigger).mousedown();
+          }
+        }, 500);
       }
     }
   });

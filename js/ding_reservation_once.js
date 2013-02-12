@@ -14,7 +14,7 @@
         $('html, body').animate({
          scrollTop: $(reserveTrigger).offset().top
         }, 2000);
-        $(reserveTrigger).click();
+        $(reserveTrigger).mousedown();
       }
     }
   });

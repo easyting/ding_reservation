@@ -331,6 +331,7 @@ function ding_reservation_reserve_form_callback($form, &$form_state) {
         unset($form['provider_options'][$v]);
         unset($form['provider_options'][$v . 'description']);
       }
+
     }
     // Redisplay form.
     $html .= drupal_render($form);
@@ -782,7 +783,7 @@ function ding_reservation_update_reservations_form_callback($form, &$form_state)
  */
 function ding_reservation_default_options_branch($type, $name, $default, $options) {
   $create = ($type == 'create');
-  $allowed_branches = ($create ? array('' => 'Select') : array($default => t('No change'))) + $options;
+  $allowed_branches = ($create ? array('' => 'Select') : array($default => t('No change'))) + (array)$options;
 
   $form[$name] = array(
     '#type' => 'select',
@@ -814,7 +815,7 @@ function ding_reservation_interest_period_selector($type, $name, $default, $opti
     }
   }
 
-  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + $options;
+  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + (array)$options;
 
   $form[$name] = array(
     '#type' => 'select',

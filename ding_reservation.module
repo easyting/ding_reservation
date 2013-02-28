@@ -331,6 +331,7 @@ function ding_reservation_reserve_form_callback($form, &$form_state) {
         unset($form['provider_options'][$v]);
         unset($form['provider_options'][$v . 'description']);
       }
+
     }
     // Redisplay form.
     $html .= drupal_render($form);
@@ -418,11 +419,11 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'pickup-id',
           ),
           'created' => array(
-            'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
+            'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'custom', 'd/m/Y') : '',
             'class' => 'created-date',
           ),
           'pickup_date' => array(
-            'data' => $item->pickup_date ? format_date(strtotime(check_plain($item->pickup_date)), 'date_only' ) : '',
+            'data' => $item->pickup_date ? format_date(strtotime(check_plain($item->pickup_date)), 'custom', 'd/m/Y' ) : '',
             'class' => 'pickup-date',
           ),
           'pickup_branch' => array(
@@ -467,11 +468,11 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'pickup-id',
           ),
           'created' => array(
-            'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
+            'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'custom', 'd/m/Y') : '',
             'class' => 'created-date',
           ),
           'expiry' => array(
-            'data' => $item->created ? format_date(strtotime(check_plain($item->expiry)), 'date_only') : '',
+            'data' => $item->created ? format_date(strtotime(check_plain($item->expiry)), 'custom', 'd/m/Y') : '',
             'class' => 'expire-date',
           ),
           'pickup_branch' => array(
@@ -506,11 +507,11 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'title',
           ),
           'created' => array(
-            'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'date_only') : '',
+            'data' => $item->created ? format_date(strtotime(check_plain($item->created)), 'custom', 'd/m/Y') : '',
             'class' => 'created-date',
           ),
           'expiry' => array(
-            'data' => $item->created ? format_date(strtotime(check_plain($item->expiry)), 'date_only') : '',
+            'data' => $item->created ? format_date(strtotime(check_plain($item->expiry)), 'custom', 'd/m/Y') : '',
             'class' => 'expire-date',
           ),
           'library' => array(
@@ -782,7 +783,7 @@ function ding_reservation_update_reservations_form_callback($form, &$form_state)
  */
 function ding_reservation_default_options_branch($type, $name, $default, $options) {
   $create = ($type == 'create');
-  $allowed_branches = ($create ? array('' => 'Select') : array($default => t('No change'))) + $options;
+  $allowed_branches = ($create ? array('' => 'Select') : array($default => t('No change'))) + (array)$options;
 
   $form[$name] = array(
     '#type' => 'select',
@@ -814,7 +815,7 @@ function ding_reservation_interest_period_selector($type, $name, $default, $opti
     }
   }
 
-  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + $options;
+  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + (array)$options;
 
   $form[$name] = array(
     '#type' => 'select',

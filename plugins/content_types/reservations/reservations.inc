@@ -18,30 +18,30 @@ $plugin = array(
  */
 function ding_reservation_reservations_content_type_render($subtype, $conf, $panel_args, $context) {
   static $preload_reservations = TRUE;
-  $account              = isset($context->data) ? $context->data : NULL;
-  $preload_ids          = array();
-  $items                = array();
-  $reservation_list     = array();
+  $account = isset($context->data) ? $context->data : NULL;
+  $preload_ids = array();
+  $items = array();
+  $reservation_list = array();
 
-  $block         = new stdClass();
+  $block = new stdClass();
   $block->module = 'ding_reservation';
-  $block->delta  = 'reservations';
+  $block->delta = 'reservations';
 
   switch ($conf['reservation_type_list']) {
     case 'ready_for_pickup':
       $block->title = t('Reservations ready for pickup');
-      $no_reservation_text = t('There are no reservations ready for pickup.');
+      $block->content = t('There are no reservations ready for pickup.');
       $form_id = 'ding_reservation_reservations_ready_form';
       break;
     default:
     case 'not_ready_for_pickup':
       $block->title = t('Reservations');
-      $no_reservation_text = t('There are no reservations.');
+      $block->content = t('There are no reservations.');
       $form_id = 'ding_reservation_reservations_notready_form';
       break;
     case 'interlibrary_loans':
       $block->title = t('Interlibrary loans');
-      $no_reservation_text = t('There are no interlibrary loans.');
+      $block->content = t('There are no interlibrary loans.');
       $form_id = 'ding_reservation_reservations_ill';
   }
 
@@ -52,7 +52,11 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
       $preload_ids[] = $item->ding_entity_id;
     }
     if (isset($conf['reservation_type_list'])) {
-      if (($conf['reservation_type_list'] == 'ready_for_pickup' && $item->ready_for_pickup === 1) || ($conf['reservation_type_list'] == 'not_ready_for_pickup' && $item->ready_for_pickup === 0) || ($conf['reservation_type_list'] == 'interlibrary_loans' && isset($item->ill_status))) {
+      $ready_for_pickup = $conf['reservation_type_list'] == 'ready_for_pickup' && $item->ready_for_pickup === 1;
+      $note_ready_for_pickup = $conf['reservation_type_list'] == 'not_ready_for_pickup' && $item->ready_for_pickup === 0;
+      $interlibrary_loan = $conf['reservation_type_list'] == 'interlibrary_loans' && isset($item->ill_status);
+
+      if ($ready_for_pickup || $note_ready_for_pickup || $interlibrary_loan) {
         $reservation_list[] = $item;
       }
     }
@@ -62,7 +66,10 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
     ding_entity_load_multiple($preload_ids);
     $preload_reservations = FALSE;
   }
-  $block->content = count($reservation_list) == TRUE ? ding_provider_get_form($form_id, $reservation_list, $conf['reservation_type_list']) : $no_reservation_text;
+  if (count($reservation_list) > 0) {
+    $block->content = ding_provider_get_form($form_id, $reservation_list, $conf['reservation_type_list']);
+  }
+
   return $block;
 }
 

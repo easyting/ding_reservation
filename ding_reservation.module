@@ -104,7 +104,10 @@ function ding_reservation_reserve_ajax($entity_id = '') {
       $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity)));
       $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
       $commands[] = ding_reservation_command_init_behavior($entity_id);
-      return array('#type' => 'ajax', '#commands' => $commands);
+      return array(
+        '#type' => 'ajax',
+        '#commands' => $commands,
+      );
     }
   }
 }
@@ -422,7 +425,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'created-date',
           ),
           'pickup_date' => array(
-            'data' => $item->pickup_date ? format_date(strtotime(check_plain($item->pickup_date)), 'custom', 'd/m/Y' ) : '',
+            'data' => $item->pickup_date ? format_date(strtotime(check_plain($item->pickup_date)), 'custom', 'd/m/Y') : '',
             'class' => 'pickup-date',
           ),
           'pickup_branch' => array(
@@ -784,7 +787,7 @@ function ding_reservation_update_reservations_form_callback($form, &$form_state)
  */
 function ding_reservation_default_options_branch($type, $name, $default, $options) {
   $create = ($type == 'create');
-  $allowed_branches = ($create ? array('' => 'Select') : array($default => t('No change'))) + (array)$options;
+  $allowed_branches = ($create ? array('' => 'Select') : array($default => t('No change'))) + (array) $options;
 
   $form[$name] = array(
     '#type' => 'select',
@@ -816,7 +819,7 @@ function ding_reservation_interest_period_selector($type, $name, $default, $opti
     }
   }
 
-  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + (array)$options;
+  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + (array) $options;
 
   $form[$name] = array(
     '#type' => 'select',

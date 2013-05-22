@@ -921,7 +921,7 @@ function ding_reservation_sort_queue_by_queue_number($a, $b) {
  * Conditional addition of ie8 fix .js file. 
  */
 function ding_reservation_init() {
-	global $user;
+  global $user;
   if ($user->uid && !empty($_COOKIE['entityReserveOnce'])) {
     // @todo: we assume that ding_toggle_format's jquery.cookie.js will be present.
     drupal_add_js(drupal_get_path('module', 'ding_reservation') . '/js/ding_reservation_once.js');

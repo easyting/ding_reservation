@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * User reservation lists.
+ */
 
 /**
  * Plugins are described by creating a $plugin array which will be used
@@ -14,7 +18,7 @@ $plugin = array(
 );
 
 /**
- * Render the block
+ * Render the block.
  */
 function ding_reservation_reservations_content_type_render($subtype, $conf, $panel_args, $context) {
   static $preload_reservations = TRUE;
@@ -27,22 +31,28 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
   $block->module = 'ding_reservation';
   $block->delta = 'reservations';
 
+  $build_form = TRUE;
+
   switch ($conf['reservation_type_list']) {
     case 'ready_for_pickup':
       $block->title = t('Reservations ready for pickup');
       $block->content = t('There are no reservations ready for pickup.');
       $form_id = 'ding_reservation_reservations_ready_form';
+      $build_form = FALSE;
       break;
+
     default:
     case 'not_ready_for_pickup':
       $block->title = t('Reservations');
       $block->content = t('There are no reservations.');
       $form_id = 'ding_reservation_reservations_notready_form';
       break;
+
     case 'interlibrary_loans':
       $block->title = t('Interlibrary loans');
       $block->content = t('There are no interlibrary loans.');
       $form_id = 'ding_reservation_reservations_ill';
+      $build_form = FALSE;
   }
 
   $list = ding_provider_invoke_page('reservation', 'list', $account);
@@ -67,14 +77,19 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
     $preload_reservations = FALSE;
   }
   if (count($reservation_list) > 0) {
-    $block->content = ding_provider_get_form($form_id, $reservation_list, $conf['reservation_type_list']);
+    if ($build_form) {
+      $block->content = ding_provider_get_form($form_id, $reservation_list, $conf['reservation_type_list']);
+    }
+    else {
+      $block->content = ding_reservation_get_table($reservation_list, $conf['reservation_type_list']);
+    }
   }
 
   return $block;
 }
 
 /**
- * Adding the admin form, to be able to control the required context
+ * Adding the admin form, to be able to control the required context.
  */
 function ding_reservation_reservations_content_type_edit_form($form, &$form_state) {
   $conf = $form_state['conf'];
@@ -92,7 +107,7 @@ function ding_reservation_reservations_content_type_edit_form($form, &$form_stat
 }
 
 /**
- * Submit handler for the admin form
+ * Submit handler for the admin form.
  */
 function ding_reservation_reservations_content_type_edit_form_submit(&$form, &$form_state) {
   foreach (element_children($form) as $key) {

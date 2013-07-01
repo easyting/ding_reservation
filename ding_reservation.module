@@ -25,8 +25,6 @@ function ding_reservation_ctools_plugin_directory($module, $plugin) {
  * Implements hook_menu().
  */
 function ding_reservation_menu() {
-  // @todo ding_reservation really doesn't know that this path is correct. How
-  // to handle it?
   $items['user/%user/status/reservations/update/%'] = array(
     'title' => 'Update reservations',
     'page callback' => 'drupal_get_form',
@@ -437,7 +435,6 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
             'class' => 'operations',
           ),
         );
-
         if (!empty($item->notes)) {
           $options[$item->id]['title']['data'][] = array(
             '#type' => 'markup',
@@ -539,12 +536,11 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
     }
   }
   if ($alma_rule || $openruth_rule) {
-    $form['reservations'] = array(
+    $form['reservations_wrapper'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Reservations'),
     );
 
-    $form['reservations']['table'] = array(
+    $form['reservations_wrapper']['reservations'] = array(
       '#type' => 'tableselect_form',
       '#header' => $header,
       '#options' => $options,
@@ -559,7 +555,6 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
       '#empty' => $empty_message,
     );
   }
-
   $form['actions'] = array(
     '#prefix' => '<div class="op-reservations">',
     '#suffix' => '</div>',
@@ -567,7 +562,7 @@ function ding_reservation_reservations_form($form, &$form_state, $items = array(
 
   // Not every type of loan can be deleted.
   // @see Lines 352 & 353 for rules.
-  if ($alma_rule || $openruth_rule) {
+  if (($alma_rule || $openruth_rule) && $able_to_delete) {
     $form['actions']['submit'] = array(
       '#prefix' => '<div class="delete-reservations">',
       '#suffix' => '</div>',
@@ -716,6 +711,7 @@ function ding_reservation_update_reservations_form($form, $form_state, $account,
     ),
     '#value' => t('Update reservations'),
   );
+
   return $form;
 }
 
@@ -969,31 +965,4 @@ class DingReservationReservableEntity implements DingReservationReservable {
   public function getTitle() {
     return isset($this->entity->record['dc:title'][''][0]) ? $this->entity->record['dc:title'][''][0] : NULL;
   }
-}
-
-/**
- * Draw table with reservation items.
- *
- * Same as 'ding_provider_get_form' but without form.
- *
- * @param array $items
- * @param string $reservation_type
- * @return array
- *
- */
-function ding_reservation_get_table($items, $reservation_type) {
-  // Fake form creation.
-  $form = array();
-  $form_state = array();
-  $table = ding_reservation_reservations_form($form, $form_state, $items, $reservation_type);
-
-  $result = NULL;
-  if (!empty($table['reservations']['table'])) {
-    $result = $table['reservations']['table'];
-  }
-  else {
-    $result = $table['reservations'];
-  }
-  // Return only markup.
-  return $result;
 }

@@ -33,7 +33,7 @@
       });
 
       $.ajax({
-        url: 'ding_availability/items/' + ids.join(','),
+        url: '/ding_availability/items/' + ids.join(','),
         dataType: 'json',
         success: function(response) {
           for (var i = 0; i < ids.length; i++) {

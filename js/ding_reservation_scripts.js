@@ -33,11 +33,12 @@
       });
 
       $.ajax({
-        url: '/ding_availability/items/' + ids.join(','),
+        url: '/ding_availability/availability/' + ids.join(','),
         dataType: 'json',
         success: function(response) {
+
           for (var i = 0; i < ids.length; i++) {
-            if (response[ids[i]].show_reservation_button) {
+            if (response[ids[i]] != undefined && response[ids[i]].show_reservation_button) {
               $('.reservation-link-ajax.ting-object-id-' + ids[i]).show();
             }
           }

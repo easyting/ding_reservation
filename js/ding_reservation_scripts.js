@@ -23,6 +23,26 @@
   Drupal.behaviors.ding_reservation = {
     attach: function (context, settings) {
       Drupal.ajax.prototype.commands.enable_reservation = enable_reservation;
+
+      var items = $('.reservation-link-ajax');
+      var ids = new Array(items.length);
+
+      items.each(function(i, e) {
+         local_id = $(e).attr('class').match(/ting-object-id-(\d+)/);
+         ids[i] = local_id[1];
+      });
+
+      $.ajax({
+        url: '/ding_availability/items/' + ids.join(','),
+        dataType: 'json',
+        success: function(response) {
+          for (var i = 0; i < ids.length; i++) {
+            if (response[ids[i]].show_reservation_button) {
+              $('.reservation-link-ajax.ting-object-id-' + ids[i]).show();
+            }
+          }
+        }
+      });
     }
   };
 })(jQuery);

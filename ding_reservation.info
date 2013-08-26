@@ -5,6 +5,7 @@ version = "7.x-1.15"
 core = 7.x
 files[] = ding_reservation.module
 files[] = ding_reservation.test
+dependenices[] = ding_availability
 dependencies[] = ding_base
 dependencies[] = ding_provider
 dependencies[] = ding_user

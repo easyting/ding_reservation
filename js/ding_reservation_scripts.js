@@ -23,15 +23,17 @@
   Drupal.behaviors.ding_reservation = {
     attach: function (context, settings) {
       Drupal.ajax.prototype.commands.enable_reservation = enable_reservation;
-      var ele = $('.reservation-link-ajax');
+      var ele = $('.reservation-link-ajax').not('.ajax-reservable-processed');
       var ids = new Array(ele.length);
       var run_request = false;
 
       $(ele, context).once('ajax-reservable', function(i, e) {
         local_id = $(e).attr('class').match(/ting-object-id-([\w\d]+)/);
-        ids[i] = local_id[1];
 
-        run_request = true;
+        if (local_id && local_id[1] !== undefined) {
+          ids[i] = local_id[1];
+          run_request = true;
+        }
       });
 
       if (run_request) {

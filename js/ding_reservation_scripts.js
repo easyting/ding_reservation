@@ -18,32 +18,38 @@
         }, 500);
       }
     });
-  }
+  };
 
   Drupal.behaviors.ding_reservation = {
     attach: function (context, settings) {
       Drupal.ajax.prototype.commands.enable_reservation = enable_reservation;
+      var ele = $('.reservation-link-ajax').not('.ajax-reservable-processed');
+      var ids = new Array(ele.length);
+      var run_request = false;
 
-      var items = $('.reservation-link-ajax');
-      var ids = new Array(items.length);
+      $(ele, context).once('ajax-reservable', function(i, e) {
+        local_id = $(e).attr('class').match(/ting-object-id-([\w\d]+)/);
 
-      items.each(function(i, e) {
-         local_id = $(e).attr('class').match(/ting-object-id-(\d+)/);
-         ids[i] = local_id[1];
-      });
-
-      $.ajax({
-        url: '/ding_availability/availability/' + ids.join(','),
-        dataType: 'json',
-        success: function(response) {
-
-          for (var i = 0; i < ids.length; i++) {
-            if (response[ids[i]] != undefined && response[ids[i]].show_reservation_button) {
-              $('.reservation-link-ajax.ting-object-id-' + ids[i]).show();
-            }
-          }
+        if (local_id && local_id[1] !== undefined) {
+          ids[i] = local_id[1];
+          run_request = true;
         }
       });
+
+      if (run_request) {
+        $.ajax({
+          url: '/ding_availability/availability/' + ids.join(','),
+          dataType: 'json',
+          success: function(response) {
+
+            for (var i = 0; i < ids.length; i++) {
+              if (response[ids[i]] !== undefined && response[ids[i]].show_reservation_button) {
+                $('.reservation-link-ajax.ting-object-id-' + ids[i]).show();
+              }
+            }
+          }
+        });
+      }
     }
   };
 })(jQuery);

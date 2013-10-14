@@ -73,6 +73,7 @@ function ding_reservation_ding_entity_buttons($type, $entity, $widget = 'default
     if ($widget == 'ajax') {
       drupal_add_library('system', 'drupal.ajax');
       drupal_add_library('system', 'jquery.form');
+      drupal_add_js(drupal_get_path('module', 'ding_availability') . '/js/ding_availability_lib.js');
       drupal_add_js(drupal_get_path('module', 'ding_reservation') . '/js/ding_reservation_scripts.js');
 
       $entity_id = $entity->localId;

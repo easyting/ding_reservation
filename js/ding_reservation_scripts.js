@@ -37,16 +37,9 @@
       });
 
       if (run_request) {
-        $.ajax({
-          url: '/ding_availability/availability/' + ids.join(','),
-          dataType: 'json',
-          success: function(response) {
-
-            for (var i = 0; i < ids.length; i++) {
-              if (response[ids[i]] !== undefined && response[ids[i]].show_reservation_button) {
-                $('.reservation-link-ajax.ting-object-id-' + ids[i]).show();
-              }
-            }
+        DingAvailability.process('availability', ids, function (id, data) {
+          if (data.show_reservation_button) {
+            $('.reservation-link-ajax.ting-object-id-' + id).show();
           }
         });
       }

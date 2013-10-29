@@ -296,6 +296,7 @@ function ding_reservation_reserve_form_submit($form, &$form_state) {
       if (is_array($reservation_result) and !empty($reservation_result['queue_number'])) {
         drupal_set_message(t('You are number @number in queue.', array('@number' => $reservation_result['queue_number'])));
       }
+      module_invoke_all('ding_reservation_complete', $reservable);
     }
     catch (DingProviderUserException $e) {
       drupal_set_message($e->getMessageT(array('@title' => $reservable->getTitle())), 'error');
@@ -657,6 +658,7 @@ function ding_reservation_reservations_delete_submit($form, &$form_state) {
   foreach ($reservations as $entity_id) {
     ding_provider_invoke('reservation', 'delete', $user, $entity_id);
   }
+  module_invoke_all('ding_reservation_deleted', $reservations);
 }
 
 /**

@@ -843,7 +843,7 @@ function ding_reservation_interest_period_selector($type, $name, $default, $opti
     }
   }
 
-  $allowed_periods = ($create ? array('' => 'Select') : array('' => t('No change'))) + (array) $options;
+  $allowed_periods = ($create ? array('' => t('Select')) : array('' => t('No change'))) + (array) $options;
 
   $form[$name] = array(
     '#type' => 'select',

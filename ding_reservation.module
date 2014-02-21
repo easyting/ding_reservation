@@ -104,7 +104,11 @@ function ding_reservation_reserve_ajax($entity_id = '') {
 
     if (is_object($entity) && $entity instanceof TingClientObject) {
       $commands = array();
-      $reservation_form = drupal_render(ding_provider_get_form('ding_reservation_reserve_form', new DingReservationReservableEntity($entity)));
+      $form = ding_provider_get_form(
+        'ding_reservation_reserve_form',
+        new DingReservationReservableEntity($entity)
+      );
+      $reservation_form = drupal_render($form);
       $commands[] = ajax_command_invoke('body', 'append', array($reservation_form));
       $commands[] = ding_reservation_command_init_behavior($entity_id);
 
@@ -346,7 +350,8 @@ function ding_reservation_reserve_form_callback($form, &$form_state) {
   }
 
   $response['#commands'][] = ajax_command_ding_popup('ding_reservation', t('Reserve'), $html);
-
+  $commands = module_invoke_all('ding_reservation_ajax_complete');
+  $response['#commands'] = array_merge($response['#commands'], $commands);
   return $response;
 }
 
@@ -955,6 +960,27 @@ function ding_reservation_init() {
   if ((count($matches) > 1) && ( $matches[1] == 8 )) {
     drupal_add_js(drupal_get_path('module', 'ding_reservation') . '/js/ding_reservation_ie8.js');
   }
+}
+
+/**
+ * Clear reservations plugin cache.
+ */
+function _ding_reservation_clear_cache() {
+  ding_session_cache_clear('ding_reservation', 'reservations');
+}
+
+/**
+ * Implements hook_ding_reservation_deleted().
+ */
+function ding_reservation_ding_reservation_deleted() {
+  _ding_reservation_clear_cache();
+}
+
+/**
+ * Implements hook_ding_reservation_complete().
+ */
+function ding_reservation_ding_reservation_complete() {
+  _ding_reservation_clear_cache();
 }
 
 /**

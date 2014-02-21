@@ -24,7 +24,6 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
   static $preload_reservations = TRUE;
   $account = isset($context->data) ? $context->data : NULL;
   $preload_ids = array();
-  $items = array();
   $reservation_list = array();
 
   $block = new stdClass();
@@ -55,7 +54,15 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
       $build_form = FALSE;
   }
 
-  $list = ding_provider_invoke_page('reservation', 'list', $account);
+  $cid = 'reservations';
+  $cache = ding_session_cache_get('ding_reservation', $cid);
+  if ($cache) {
+    $list = $cache;
+  }
+  else {
+    $list = ding_provider_invoke_page('reservation', 'list', $account);
+    ding_session_cache_set('ding_reservation', $cid, $list);
+  }
 
   foreach ($list as $item) {
     if (isset($item->ding_entity_id)) {
@@ -72,6 +79,7 @@ function ding_reservation_reservations_content_type_render($subtype, $conf, $pan
       }
     }
   }
+
   // Preload all ting objects.
   if ($preload_reservations) {
     ding_entity_load_multiple($preload_ids);

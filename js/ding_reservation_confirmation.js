@@ -9,7 +9,7 @@
         var cancel = Drupal.t("Cancel");
         var title = Drupal.t('Are you sure you want to delete reservation(s)?');
 
-        $('<div class="reservation-delete-confirm-popup">' + title + '</div>').dialog({
+        $('<div class="ui-dialog delete-confirmation">' + title + '</div>').dialog({
           resizable: false,
           height: 'auto',
           modal: true,

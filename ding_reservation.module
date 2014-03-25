@@ -958,6 +958,7 @@ function ding_reservation_init() {
     drupal_add_js($path . '/js/ding_reservation_once.js');
   }
   else {
+    drupal_add_library('system', 'ui.dialog');
     drupal_add_js($path . '/js/ding_reservation_confirmation.js');
   }
 }

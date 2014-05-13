@@ -754,6 +754,8 @@ function ding_reservation_reservation_delete_confirm_form_submit($form, &$form_s
   else {
     ding_provider_invoke('reservation', 'delete', $user, $selected_reservations);
   }
+
+  _ding_reservation_clear_cache();
 }
 
 /**
